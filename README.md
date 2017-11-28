@@ -3,6 +3,7 @@
 canqv is a small C-program which shows a (subset of a) list of
 CAN frames found on a CAN bus.
 The main goal is to provide a __quick view on CAN__.
+This version is modified to read a Volvo V70n.
 
 ## operation
 
