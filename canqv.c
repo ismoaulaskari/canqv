@@ -96,15 +96,15 @@ static int cmpcache(const void *va, const void *vb) {
 }
 
 static int isCommand(int id) {
-    if (id >= 0xC0 && id < 0xD0) {
+    if (id >= 0xc0 && id < 0xd0) {
         return 1;
     }
     return 0;
 }
 
 static char *unitName(int id) {
-    if (0x1b == id) return "MUM";
-    if (0x40 == id) return "CEM";
+    if (0x1b == id) return "MUM"; //dummy test unitname
+    if (0x40 == id) return "CEM"; //low speed can
     if (0x51 == id) return "DIM";
     if (0x48 == id) return "SWM";
     if (0x29 == id) return "CCM";
@@ -116,6 +116,13 @@ static char *unitName(int id) {
     if (0x47 == id) return "UEM";
     if (0x60 == id) return "AUM";
     if (0x64 == id) return "PHM";
+    if (0x50 == id) return "CEH"; //high-speed can units with H-ending:
+    if (0x01 == id) return "BCH";
+    if (0x52 == id) return "AEM";
+    if (0x11 == id) return "ECH";
+    if (0x28 == id) return "SAH"; //SAS
+    if (0x6e == id) return "TCH";
+    if (0x62 == id) return "RTI";
     return "";
 }
 
@@ -293,6 +300,7 @@ int main(int argc, char *argv[]) {
                     strcpy(unit, unitName(cache[column].cf.data[byte]));
                     if (strlen(unit) == 3 && command_flag)
                         printf(" %3s ", unit);
+                        //append frame to log here?
                     else
                         printf(" %02x  ", cache[column].cf.data[byte]);
                 } else
