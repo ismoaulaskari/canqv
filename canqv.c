@@ -129,7 +129,7 @@ void appendLog(FILE *fp, struct can_frame cf) {
     fp = fopen("/tmp/canqv_captures.log", "a");
     unsigned char *row = cf.data;
     //fputs(row, fp);
-    fprintf(fp, "%08x:  %02x  %02x  %02x  %02x  %02x  %02x  %02x  %02x  %02x \n", cf.can_id & CAN_EFF_MASK, row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8]);
+    fprintf(fp, "%08x:  %02x  %03s  %02x  %02x  %02x  %02x  %02x  %02x  %02x \n", cf.can_id & CAN_EFF_MASK, row[0],unitName(row[1]),row[2],row[3],row[4],row[5],row[6],row[7],row[8]);
     fclose(fp);
 }
 
