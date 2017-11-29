@@ -68,6 +68,7 @@ static const char optstring[] = "V?vx:m:";
 static int verbose;
 static double deadtime = 10.0;
 static double maxperiod = 2.0;
+static int command_flag = 0;
 
 /* jiffies, in msec */
 static double jiffies;
@@ -94,6 +95,13 @@ static int cmpcache(const void *va, const void *vb) {
     return a->cf.can_id - b->cf.can_id;
 }
 
+static int isCommand(int id) {
+    if (id >= 0xC0 && id < 0xD0) {
+        return 1;
+    }
+    return 0;
+}
+
 static char *unitName(int id) {
     if (0x1b == id) return "MUM";
     if (0x40 == id) return "CEM";
@@ -112,7 +120,7 @@ static char *unitName(int id) {
 }
 
 int main(int argc, char *argv[]) {
-    int opt, ret, sock, j, byte;
+    int opt, ret, sock, column, byte;
     const char *device;
     char *endp;
     struct can_filter *filters;
@@ -239,15 +247,15 @@ int main(int argc, char *argv[]) {
         if ((jiffies - last_update) < 0.25)
             continue;
         /* remove dead cache */
-        for (j = 0; j < ncache; ++j) {
-            curr = cache + j;
+        for (column = 0; column < ncache; ++column) {
+            curr = cache + column;
             lastseen = jiffies - curr->lastrx;
 
             if (lastseen > deadtime) {
                 /* delete this entry */
-                memcpy(cache + j, cache + j + 1, (ncache - j - 1) * sizeof (*cache));
+                memcpy(cache + column, cache + column + 1, (ncache - column - 1) * sizeof (*cache));
                 --ncache;
-                --j;
+                --column;
                 continue;
             }
 
@@ -271,30 +279,33 @@ int main(int argc, char *argv[]) {
         puts("Message length: High nibble seems to be always 'C' in command message. Low nibble: Bit 3 is always on. Bits 0-2 is the actual message length (excluding the first byte).");
         puts("");
 
-        for (j = 0; j < ncache; ++j) {
-            if (cache[j].cf.can_id & CAN_EFF_FLAG)
-                printf("%08x:", cache[j].cf.can_id & CAN_EFF_MASK);
+        for (column = 0; column < ncache; ++column) {
+            if (cache[column].cf.can_id & CAN_EFF_FLAG)
+                printf("%08x:", cache[column].cf.can_id & CAN_EFF_MASK);
             else
-                printf("     %03x:", cache[j].cf.can_id & CAN_SFF_MASK);
-            for (byte = 0; byte < cache[j].cf.can_dlc; ++byte) {
-                if (j == 1) {
+                printf("     %03x:", cache[column].cf.can_id & CAN_SFF_MASK);
+            for (byte = 0; byte < cache[column].cf.can_dlc; ++byte) {
+                if (column == 0) {
+                    if (isCommand(cache[column].cf.data[byte])) command_flag = 1;
+                }
+                if (column == 1) {
                     char unit[3];
-                    strcpy(unit, unitName(cache[j].cf.data[byte]));
-                    if (strlen(unit) < 3)
-                        printf(" %02x  ", cache[j].cf.data[byte]);
-                    else
+                    strcpy(unit, unitName(cache[column].cf.data[byte]));
+                    if (strlen(unit) == 3 && command_flag)
                         printf(" %3s ", unit);
+                    else
+                        printf(" %02x  ", cache[column].cf.data[byte]);
                 } else
-                    printf(" %02x  ", cache[j].cf.data[byte]);
-
+                    printf(" %02x  ", cache[column].cf.data[byte]);
+                command_flag = 0;
             }
             for (; byte < 8; ++byte)
                 printf(" --");
-            printf("\tlast=-%.3lfs", jiffies - cache[j].lastrx);
-            if (!isnan(cache[j].period))
-                printf("\tperiod=%.3lfs", cache[j].period);
+            printf("\tlast=-%.3lfs", jiffies - cache[column].lastrx);
+            if (!isnan(cache[column].period))
+                printf("\tperiod=%.3lfs", cache[column].period);
             printf("\n");
-            cache[j].flags &= F_DIRTY;
+            cache[column].flags &= F_DIRTY;
         }
 
         puts("");
