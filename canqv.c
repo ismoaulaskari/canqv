@@ -125,6 +125,14 @@ static char *unitName(int id) {
     return "";
 }
 
+void appendLog(FILE *fp, struct can_frame cf) {
+    fp = fopen("/tmp/canqv_captures.log", "a");
+    char *row = cf.data;
+    //fputs(row, fp);
+    fprintf(fp, "%08x:  %02x  %02x  %02x  %02x  %02x  %02x  %02x  %02x  %02x \n", cf.can_id & CAN_EFF_MASK, row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8]);
+    fclose(fp);
+}
+
 int main(int argc, char *argv[]) {
     int opt, ret, sock, row, byte;
     const char *device;
@@ -135,6 +143,7 @@ int main(int argc, char *argv[]) {
     struct cache *cache, w, *curr;
     size_t ncache, scache;
     double last_update, lastseen;
+    FILE *fp;
 
     /* argument parsing */
     while ((opt = getopt_long(argc, argv, optstring, long_opts, NULL)) != -1)
@@ -300,7 +309,7 @@ int main(int argc, char *argv[]) {
                     strcpy(unit, unitName(cache[row].cf.data[byte]));
                     if (strlen(unit) > 2 && command_flag == 1) {
                         printf(" %3s ", unit);
-                        //append frame to log here?
+                        appendLog(fp, cache[row].cf);
                     } else {
                         printf(" %02x  ", cache[row].cf.data[byte]);
                     }
